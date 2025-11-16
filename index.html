@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Android Tablet Simulator - Market & All Apps</title>
+  <link rel="stylesheet" href="https://esironal.github.io/win10css/win10.css">
+  <meta name="viewport" content="width=1020">
+  <style>
+    html, body { width:100vw; height:100vh; margin:0; padding:0; }
+    /* Blue & red polished wallpaper - layered gradients for a glossy polished look */
+    body {
+      background-color: #0b2b5a;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 8%),
+        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.03), transparent 12%),
+        linear-gradient(135deg, rgba(6,97,170,0.96) 0%, rgba(13,84,197,0.92) 30%, rgba(255,67,92,0.90) 70%, rgba(166,0,26,0.95) 100%);
+      background-blend-mode: overlay, overlay, normal;
+      background-size: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-width: 100vw;
+      overflow: hidden;
+      cursor: default; /* keep default at page level, .android-tablet will set none */
+      color: #fff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .android-tablet {
+      width: 1020px; height: 680px; border-radius: 32px;
+      box-shadow: 0 16px 44px rgba(0,0,0,0.55), 0 0 0 8px #fff2 inset;
+      background: rgba(18,18,28,0.55);
+      position: relative; display: flex; flex-direction: column;
+      overflow: hidden; font-family: "Segoe UI", Arial, sans-serif;
+      cursor: none; /* hide native cursor inside the tablet so custom cursor shows */
+    }
+
+    .tablet-status-bar {
+      height: 32px; background: rgba(12,12,16,0.6); color: #fff; font-size: 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; letter-spacing: 1px; user-select: none; z-index: 2;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .status-left { display:flex; align-items:center; gap:12px; }
+    .tablet-logo { font-size: 19px; color: #66ff9a; font-weight: bold; letter-spacing: 1.2px; }
+
+    .lockscreen { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index:99;
+      background: linear-gradient(135deg, rgba(10,103,173,0.95), rgba(78,53,107,0.95));
+      display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity .18s;}
+    .lockscreen[hidden] { display: none; }
+    .lock-main { color: #fff; align-items: center; justify-content: center; display: flex;
+      flex-direction: column; width: 100%; min-height: 400px;}
+    .lock-time { font-size:80px;margin-bottom:14px;font-weight:700; text-shadow:0 3px 38px rgba(0,0,0,0.6); }
+    .lock-date { font-size:29px;font-weight:500;margin-bottom:28px; text-shadow:0 2px 16px rgba(0,0,0,0.45); }
+    .lock-btn { margin-top:120px;padding:14px 36px; font-size:23px;color:#fff; border:none; border-radius:25px;
+      background:linear-gradient(102deg,#0592e8 60%,#ff6b7a 150%);box-shadow:0 2px 17px rgba(5,140,220,0.25); cursor:pointer;font-weight:700;}
+
+    .tablet-homescreen {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      background: transparent; width: 100%; height: 100%;
+      overflow-y: auto; min-height:0; min-width:0; z-index:1; padding-top: 34px;
+    }
+
+    .title-home { font-size:32px; color:#fff; font-weight:700; margin-bottom:14px; text-shadow:0 6px 20px rgba(0,0,0,0.6); }
+
+    .tablet-apps-grid {
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+      align-items: center;
+      margin: 12px 0 24px;
+      flex-wrap: wrap;
+      max-width: 920px;
+    }
+
+    .tab-app-ico {
+      width: 84px; height: 84px; border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.12));
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 0 2px rgba(255,255,255,0.02) inset;
+      user-select: none; font-size:16px; font-weight:500; transition: transform .12s, box-shadow .12s;
+    }
+    .tab-app-ico:hover, .tab-app-ico:active {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,255,255,0.04) inset;
+    }
+    .tab-app-ico .fakeicon {
+      width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+      font-size:22px;background:linear-gradient(150deg,#ff9cff 10%,#30b9ff 90%);
+      color:#fff;text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    }
+    .tab-app-ico .label { font-size: 13px; color: #fff; margin-top: 6px; width:80px;text-align:center; }
+
+    .tablet-apps-dock {
+      background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)); display: flex; justify-content: space-evenly; align-items: center;
+      height: 64px; width: 86%; border-radius: 20px;
+      box-shadow:0 6px 30px rgba(0,0,0,0.5) inset, 0 -1px 3px rgba(0,0,0,0.35);
+      margin-bottom: 20px; position: absolute; left: 50%; transform: translateX(-50%); bottom: 24px; z-index: 5;
+      padding: 10px;
+    }
+
+    .tablet-screen-app { flex:1; display:none; flex-direction:column; background: rgba(246,248,255,0.03); min-width:0; min-height:0; position:relative; }
+    .tab-app-title-bar {
+      height: 54px; background: linear-gradient(180deg,#ffffff08,#00000008); color:#fff; display:flex; align-items:center;
+      font-size:1.0rem; padding:8px 12px; gap:8px; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.04); position:relative;
+    }
+    .tab-app-title-bar .app-title { font-size:1.1rem; font-weight:700; padding-left:6px; color:#eef; }
+
+    .close-btn {
+      position: absolute; right:10px; top:11px; width:36px; height:36px; background:#ff4d4d; color:#fff !important; border-radius:50%; border:none;
+      font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition: transform .12s;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+      z-index: 10;
+    }
+    .close-btn:hover { transform: scale(1.06); }
+
+    /* Chrome URL bar inside the Chrome app */
+    .chrome-url-container { display:flex; align-items:center; gap:8px; flex:1; padding-right:72px; } /* more padding so Go won't be under close */
+    #chrome-url { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.04); color:#fff; }
+    .chrome-go { padding:8px 12px; border-radius:8px; background:#2c8ed8; color:#fff; border:none; cursor:pointer; z-index:2; }
+
+    /* when input focused, slightly nudge the Go button to the left so it's always visible and clickable */
+    .tab-app-title-bar.input-focused .chrome-go { transform: translateX(-6px); transition: transform .12s; }
+
+    .camera-container {flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent;}
+    #video {border-radius:18px;border:4px solid rgba(23,211,253,0.15);margin-bottom:27px;box-shadow:0 12px 36px rgba(23,211,253,0.05);}
+    #snapshotArea {margin-top:18px;}
+    #snapshotArea img { max-width:250px; max-height:170px; margin-top:9px; border-radius:11px; box-shadow:0 6px 20px rgba(0,0,0,0.45); }
+
+    /* Animated Cursor overlay (blue & red polished) */
+    #custom-cursor-anim {
+      pointer-events: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 56px;
+      height: 56px;
+      z-index: 999999;
+      transform: translate(-50%, -50%);
+      transition: opacity .12s ease;
+      will-change: left, top, transform, opacity;
+      display: block;
+      mix-blend-mode: screen;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,0.5));
+    }
+    #custom-cursor-anim svg { width: 100%; height: 100%; display:block; }
+    @keyframes cursorPulseMulti {
+      0% { transform: scale(1); opacity: .9; }
+      50% { transform: scale(1.18); opacity: 1; filter: drop-shadow(0 0 12px rgba(5,169,252,0.65)) drop-shadow(0 0 16px rgba(206,34,233,0.45)); }
+      100% { transform: scale(1); opacity: .9; }
+    }
+    #custom-cursor-anim .pulse { animation: cursorPulseMulti 1.05s infinite ease-in-out; }
+
+    /* Drawer */
+    .all-apps-drawer {
+      position: absolute; left:0; top:0; width:100%; height:100%; z-index:90;
+      background: linear-gradient(180deg, rgba(6,14,30,0.65), rgba(2,6,12,0.82)); display:none; flex-direction:column; align-items:center; justify-content:center;
+      padding-top: 60px;
+    }
+    .all-apps-header { font-size:2rem; color:#fff; margin:10px; }
+
+    /* Polished nav placed inside the drawer */
+    .drawer-nav {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap:12px;
+      padding:6px;
+      border-radius: 20px;
+      background: linear-gradient(90deg, #0b67b8 0%, #ff4d6a 100%);
+      border: 2px solid rgba(255,255,255,0.06);
+      box-shadow: 0 10px 36px rgba(11,103,184,0.14), inset 0 1px 0 rgba(255,255,255,0.04);
+      z-index:95;
+      align-items:center;
+    }
+    .drawer-nav .nav-btn {
+      width:56px;
+      height:36px;
+      border-radius:10px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(255,255,255,0.06);
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .12s ease, background .12s;
+    }
+    .drawer-nav .nav-btn:hover { transform: translateY(-3px); background: rgba(255,255,255,0.10); }
+
+    /* small scrollbar styling */
+    .tablet-apps-grid::-webkit-scrollbar, .tablet-apps-dock::-webkit-scrollbar { width:8px; height:8px; }
+    .tablet-apps-grid::-webkit-scrollbar-thumb, .tablet-apps-dock::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.35); border-radius:8px; }
+
+    /* Upload modal styling */
+    .upload-modal {
+      position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+      background: rgba(14,21,32,0.98); color: #fff; padding: 16px; border-radius: 12px; z-index: 100000;
+      max-width: 86%; max-height: 78%; overflow:auto; box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+    }
+    .upload-item { display:flex; gap:12px; align-items:center; background: rgba(255,255,255,0.03); padding:8px; border-radius:8px; margin-bottom:10px; }
+    .upload-item img, .upload-item video { max-width:160px; max-height:110px; border-radius:8px; object-fit:cover; }
+
+    /* Boot overlay (splash only, no embedding block) */
+    .boot-overlay {
+      position: fixed; left: 0; top: 0; right:0; bottom:0; z-index: 200000; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg,#080b10,#081028); color:#fff; flex-direction:column; gap:14px;
+    }
+    .boot-card { background: rgba(255,255,255,0.03); padding: 22px 34px; border-radius: 14px; text-align:center; box-shadow: 0 30px 70px rgba(0,0,0,0.7); }
+    .boot-title { font-size:1.6rem; font-weight:800; letter-spacing:1px; }
+    .boot-sub { color: #bcd; margin-top:8px; font-size:0.95rem; }
+
+    /* Ensure iframes fill area */
+    iframe { width:100%; height:100%; border:0; display:block; }
+  </style>
+</head>
+<body>
+  <div class="android-tablet" id="androidTablet">
+    <div class="tablet-status-bar">
+      <div class="status-left">
+        <span id="tablet-time">12:34</span>
+      </div>
+      <div>
+        <span style="margin-right:10px;">📶</span>
+        <span style="margin-right:10px;">🔋</span>
+        <span class="tablet-logo">TABLET</span>
+      </div>
+    </div>
+
+    <!-- Boot overlay (will be removed after boot completes) -->
+    <div id="bootOverlay" class="boot-overlay" aria-hidden="false" style="display:none;">
+      <div class="boot-card" role="dialog" aria-label="Boot screen">
+        <div class="boot-title">Android Tab Simulator</div>
+        <div class="boot-sub">Starting up — please wait</div>
+        <div id="bootProgress" style="margin-top:14px;width:200px;height:8px;background:#061424;border-radius:6px;overflow:hidden;">
+          <div id="bootProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#0b67b8,#ff4d6a);"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lockscreen" id="lockscreen" aria-hidden="true">
+      <div class="lock-main">
+        <div class="lock-time" id="lockscreen-time"></div>
+        <div class="lock-date" id="lockscreen-date"></div>
+        <button class="lock-btn" onclick="unlockTablet()">Unlock</button>
+      </div>
+    </div>
+
+    <div class="tablet-homescreen" id="tab-homescreen">
+      <div class="title-home">Android Tab Home</div>
+
+      <div class="tablet-apps-grid" id="homescreen-grid">
+        <div class="tab-app-ico chrome" onclick="launchTabApp('chrome')" title="Chrome">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Google_Chrome_icon_%282011%29.png" alt="Chrome" style="width:44px;height:44px;">
+          <div class="label">Chrome</div>
+        </div>
+
+        <div class="tab-app-ico market" onclick="launchTabApp('market')" title="Market">
+          <div class="fakeicon" style="background:linear-gradient(135deg,#ffb900,#f64a6b 58%,#2256ec 90%);">🛒</div>
+          <div class="label">Market</div>
+        </div>
+
+        <div class="tab-app-ico camera" onclick="launchTabApp('camera')" title="Camera">
+          <div class="fakeicon">📷</div>
+          <div class="label">Camera</div>
+        </div>
+
+        <!-- Visnalize / Brick1100 -->
+        <div class="tab-app-ico visnalize" onclick="launchUrlApp('Visnalize','https://brick1100.visnalize.com/#/');" title="Visnalize">
+          <div class="fakeicon">🧱</div>
+          <div class="label">Visnalize</div>
+        </div>
+
+        <!-- Hyggshi OS -->
+        <div class="tab-app-ico hyggshi" onclick="launchUrlApp('Hyggshi OS','https://hyggshiosdeveloper.github.io/hyggshi-os-website/OSmain.html');" title="Hyggshi OS">
+          <div class="fakeicon">🌏</div>
+          <div class="label">Hyggshi OS</div>
+        </div>
+
+        <!-- Vivek9 Patel -->
+        <div class="tab-app-ico vivek" onclick="launchUrlApp('Vivek9 Patel','https://vivek9patel.github.io/');" title="Vivek9 Patel">
+          <div class="fakeicon">🌠</div>
+          <div class="label">Vivek9</div>
+        </div>
+
+        <!-- WinXP (vercel) -->
+        <div class="tab-app-ico winxp" onclick="launchUrlApp('WinXP','https://winxp.vercel.app/');" title="WinXP">
+          <div class="fakeicon">🟦</div>
+          <div class="label">WinXP</div>
+        </div>
+
+        <!-- Angry Birds (URL launcher) -->
+        <div class="tab-app-ico angrybirds" onclick="launchUrlApp('Angry Birds','https://krizdev.github.io/Angry-Birds-Chrome-Revived/');" title="Angry Birds">
+          <div class="fakeicon">AB</div>
+          <div class="label">Angry Birds</div>
+        </div>
+
+        <div class="tab-app-ico" onclick="showDrawer()" title="All Apps">
+          <div class="fakeicon">≡</div>
+          <div class="label">All Apps</div>
+        </div>
+      </div>
+
+      <div class="tablet-apps-dock">
+        <div class="tab-app-ico chrome" onclick="launchTabApp('chrome')" title="Chrome">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Google_Chrome_icon_%282011%29.png" style="width:36px;height:36px;">
+        </div>
+        <div class="tab-app-ico market" onclick="launchTabApp('market')" title="Market">
+          <div class="fakeicon" style="background:linear-gradient(140deg,#ffb900,#f64a6b 58%,#2256ec 90%);">🛒</div>
+        </div>
+        <div class="tab-app-ico camera" onclick="launchTabApp('camera')" title="Camera"><div class="fakeicon">📷</div></div>
+        <div class="tab-app-ico" onclick="showDrawer()" title="All Apps"><div class="fakeicon">≡</div></div>
+      </div>
+    </div>
+
+    <!-- Apps -->
+    <div class="tablet-screen-app" id="tabapp-chrome" role="application" aria-label="Chrome app">
+      <div class="tab-app-title-bar" id="chromeTitleBar">
+        <div class="app-title">Chrome</div>
+        <div class="chrome-url-container">
+          <input id="chrome-url" placeholder="https://example.com" autocomplete="off" />
+          <button class="chrome-go" id="chromeGoBtn" onclick="chromeNavigate()">Go</button>
+        </div>
+        <button class="close-btn" onclick="closeTabApp('chrome')" title="Close">✕</button>
+      </div>
+      <iframe class="chrome-frame" id="tab-chrome-frame" src="https://google.com/?igu=1" title="Chrome Frame"></iframe>
+    </div>
+
+    <div class="tablet-screen-app" id="tabapp-market" role="application" aria-label="Market app">
+      <div class="tab-app-title-bar">
+        <div class="app-title">Market</div>
+        <button class="close-btn" onclick="closeTabApp('market')" title="Close">✕</button>
+      </div>
+      <div style="padding:2rem 2.5rem;">
+        <div style="font-size:1.4rem;font-weight:700;margin-bottom:1rem;color:#fff;">Installable OS & Game Demos</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:22px;">
+          <div class="market-tile">
+            <div class="mt-icon">🪟96</div>
+            <div style="font-weight:500;margin:10px 0 8px;">Windows 96</div>
+            <button class="tile-btn" onclick="launchUrlApp('Windows 96','https://windows96.net/');event.stopPropagation();">Launch</button>
+          </div>
+          <div class="market-tile">
+            <div class="mt-icon">🌉12</div>
+            <div style="font-weight:500;margin:10px 0 8px;">Windows 12</div>
+            <button class="tile-btn" onclick="launchUrlApp('Windows 12','https://tjy-gitnub.github.io/win12/desktop.html');event.stopPropagation();">Launch</button>
+          </div>
+          <div class="market-tile">
+            <div class="mt-icon">🟪98JS</div>
+            <div style="font-weight:500;margin:10px 0 8px;">Windows 98.js</div>
+            <button class="tile-btn" onclick="launchUrlApp('98.js.org','https://98.js.org/');event.stopPropagation();">Launch</button>
+          </div>
+          <div class="market-tile">
+            <div class="mt-icon">🦋Mac</div>
+            <div style="font-weight:500;margin:10px 0 8px;">macOS Web</div>
+            <button class="tile-btn" onclick="launchUrlApp('macOS Web','https://www.macos-web.app/');event.stopPropagation();">Launch</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tablet-screen-app" id="tabapp-camera" role="application" aria-label="Camera app">
+      <div class="tab-app-title-bar">
+        <div class="app-title">Camera</div>
+        <button class="close-btn" onclick="closeTabApp('camera')" title="Close">✕</button>
+      </div>
+      <div class="camera-container">
+        <video id="video" autoplay playsinline width=640 height=480></video>
+        <button onclick="capturePhoto()" style="font-size:1.2rem;margin:17px 0;">📸 Take Photo</button>
+        <div id="snapshotArea"></div>
+        <div id="cameraError" style="color:#ff9090;margin-top:13px;"></div>
+      </div>
+    </div>
+
+    <div class="tablet-screen-app" id="tabapp-xp" role="application" aria-label="Windows XP app">
+      <div class="tab-app-title-bar">
+        <div class="app-title">Windows XP Web</div>
+        <button class="close-btn" onclick="closeTabApp('xp')" title="Close">✕</button>
+      </div>
+      <iframe src="https://xp.quenq.com/" style="background:#3357bd" title="Windows XP Frame"></iframe>
+    </div>
+
+    <div class="tablet-screen-app" id="tabapp-notes" role="application" aria-label="Notes app">
+      <div class="tab-app-title-bar">
+        <div class="app-title">Notes</div>
+        <button class="close-btn" onclick="closeTabApp('notes')" title="Close">✕</button>
+      </div>
+      <div class="notes-container" style="flex:1;display:flex;flex-direction:column;padding:22px;background:rgba(255,255,255,0.02);">
+        <div class="note-input-row" style="margin-bottom:13px;">
+          <input id="note-input" type="text" placeholder="New note..." maxlength="80"/>
+          <button onclick="addNote()">Add</button>
+        </div>
+        <div class="notes-list" id="notes-list"></div>
+      </div>
+    </div>
+
+    <div class="tablet-screen-app" id="tabapp-urlapp" style="min-width:0;min-height:0;" role="application" aria-label="Web app viewer">
+      <div class="tab-app-title-bar" id="urlapp-title">
+        <div class="app-title">Custom App</div>
+        <button class="close-btn" onclick="closeTabApp('urlapp')" title="Close">✕</button>
+      </div>
+      <iframe id="urlapp-frame" src="about:blank" title="Web App Frame"></iframe>
+    </div>
+
+    <div class="all-apps-drawer" id="allAppsDrawer" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="all-apps-header">
+        All Apps
+        <button style="float:right;background:#2c8ed8;color:#fff;border:none;padding:6px 14px;border-radius:12px;" onclick="hideDrawer()">Close</button>
+      </div>
+      <div class="tablet-apps-grid" id="drawer-apps-grid" aria-live="polite"></div>
+
+      <!-- Polished navigation pill anchored to the bottom of the drawer -->
+      <div class="drawer-nav" role="navigation" aria-label="Drawer navigation">
+        <div id="nav-multitask-drawer" class="nav-btn" title="Multitask" tabindex="0">≡</div>
+        <div id="nav-home-drawer" class="nav-btn" title="Home" tabindex="0">◯</div>
+        <div id="nav-back-drawer" class="nav-btn" title="Back" tabindex="0">←</div>
+      </div>
+    </div>
+
+    <div id="contextMenu" class="context-menu" style="position:absolute; display:none;"></div>
+
+    <!-- hidden file input for uploads -->
+    <input id="fileUploader" type="file" accept="*/*" multiple style="display:none;" />
+
+    <!-- upload modal container placeholder -->
+    <div id="uploadModalContainer" style="display:none;"></div>
+
+    <!-- custom cursor element will be created/recreated by script if missing -->
+    <div id="custom-cursor-anim" aria-hidden="true" style="display:none;"></div>
+
+  </div>
+
+  <script>
+    // App list for All Apps drawer (including newly requested apps)
+    const APP_LIST = [
+      {id:"chrome", label:"Chrome", html:`<img src="https://upload.wikimedia.org/wikipedia/commons/8/87/Google_Chrome_icon_%282011%29.png" style="width:43px;height:43px;">`},
+      {id:"market", label:"Market", html:`<div class="fakeicon" style="background:linear-gradient(135deg,#ffb900,#f64a6b 58%,#2256ec 90%);">🛒</div>`},
+      {id:"camera", label:"Camera", html:`<div class="fakeicon">📷</div>`},
+      {id:"xp", label:"XP", html:`<div class="fakeicon">XP</div>`},
+      {id:"notes", label:"Notes", html:`<div class="fakeicon">✎</div>`},
+      // New requested URL apps
+      {id:"urlapp", label:"Visnalize", url:"https://brick1100.visnalize.com/#/", html:'<div class="fakeicon">🧱</div>'},
+      {id:"urlapp", label:"Hyggshi OS", url:"https://hyggshiosdeveloper.github.io/hyggshi-os-website/OSmain.html", html:'<div class="fakeicon">🌏</div>'},
+      {id:"urlapp", label:"Vivek9 Patel", url:"https://vivek9patel.github.io/", html:'<div class="fakeicon">🌠</div>'},
+      {id:"urlapp", label:"WinXP (vercel)", url:"https://winxp.vercel.app/", html:'<div class="fakeicon">🟦</div>'},
+      {id:"urlapp", label:"Angry Birds", url:"https://krizdev.github.io/Angry-Birds-Chrome-Revived/", html:'<div class="fakeicon">AB</div>'},
+      // Market/Store demos:
+      {id:"urlapp", label:"Windows 96", url:"https://windows96.net/", html:'<div class="fakeicon">🪟96</div>'},
+      {id:"urlapp", label:"Windows 12", url:"https://tjy-gitnub.github.io/win12/desktop.html", html:'<div class="fakeicon">🌉12</div>'},
+      {id:"urlapp", label:"Windows 98.js", url:"https://98.js.org/", html:'<div class="fakeicon">🟪98JS</div>'},
+      {id:"urlapp", label:"macOS Web", url:"https://www.macos-web.app/", html:'<div class="fakeicon">🦋Mac</div>'}
+    ];
+
+    /* ------------------ Boot overlay (no frame-bust) ------------------ */
+    (function runBootOverlay(){
+      const bootOverlay = document.getElementById('bootOverlay');
+      // Show boot overlay briefly on initial load
+      bootOverlay.style.display = 'flex';
+      const bar = document.getElementById('bootProgressBar');
+      let pct = 0;
+      const t = setInterval(()=>{
+        pct += 12;
+        if(bar) bar.style.width = pct + '%';
+        if(pct>=100){
+          clearInterval(t);
+          setTimeout(()=>{ bootOverlay.style.display='none'; }, 450);
+        }
+      }, 280);
+    })();
+
+    /* ------------------ Drawer / Homescreen ------------------ */
+    function fillDrawer() {
+      let grid = document.getElementById('drawer-apps-grid');
+      let all = APP_LIST.map((app, idx)=>{
+        // ensure unique event handlers: use data attributes and event delegation where possible
+        // if app has url use URL launcher
+        let clickAttr;
+        if (app.url) {
+          clickAttr = `onclick="handleDrawerLaunchUrl(${idx})"`;
+        } else {
+          clickAttr = `onclick="handleDrawerLaunchInternal('${app.id}')"`;
+        }
+        return `<div class="tab-app-ico" ${clickAttr} title="${escapeHtml(app.label)}">${app.html}<div class="label">${escapeHtml(app.label)}</div></div>`;
+      }).join('');
+      grid.innerHTML = all;
+    }
+    function showDrawer() { fillDrawer(); const d = document.getElementById('allAppsDrawer'); d.style.display="flex"; d.setAttribute('aria-hidden','false'); }
+    function hideDrawer() { const d = document.getElementById('allAppsDrawer'); d.style.display="none"; d.setAttribute('aria-hidden','true'); }
+
+    function handleDrawerLaunchUrl(index){
+      const app = APP_LIST[index];
+      if(app && app.url) launchUrlApp(app.label, app.url);
+      hideDrawer();
+    }
+    function handleDrawerLaunchInternal(id){
+      launchTabApp(id);
+      hideDrawer();
+    }
+
+    /* ------------------ Lock & Time ------------------ */
+    let lockClockInterval = null;
+    function showLockscreen() {
+      updateLockscreenClock();
+      document.getElementById('lockscreen').hidden = false;
+      if (lockClockInterval) clearInterval(lockClockInterval);
+      lockClockInterval = setInterval(updateLockscreenClock, 1000);
+    }
+    function unlockTablet() {
+      document.getElementById('lockscreen').hidden = true;
+      if (lockClockInterval) { clearInterval(lockClockInterval); lockClockInterval = null; }
+    }
+    function updateLockscreenClock() {
+      const now = new Date();
+      let h = now.getHours(), m = now.getMinutes();
+      if (h < 10) h = "0" + h; if (m < 10) m = "0" + m;
+      const lockTime = document.getElementById('lockscreen-time');
+      if (lockTime) lockTime.textContent = h + ":" + m;
+      const lockDate = document.getElementById('lockscreen-date');
+      if (lockDate) {
+        let wds = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+            ms = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        let d = wds[now.getDay()] + ", " + ms[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+        lockDate.textContent = d;
+      }
+    }
+
+    /* ------------------ Tablet status time ------------------ */
+    function updateTabletTime() {
+      const now = new Date();
+      let h = now.getHours(), m = now.getMinutes();
+      if (h < 10) h = "0" + h; if (m < 10) m = "0" + m;
+      const t = document.getElementById("tablet-time");
+      if (t) t.textContent = h + ":" + m;
+    }
+    updateTabletTime(); setInterval(updateTabletTime, 30000);
+
+    /* ------------------ Basic App launching ------------------ */
+    function tabGoHome() { hideAllTabApps(); document.getElementById("tab-homescreen").style.display = ""; }
+    function launchTabApp(app) {
+      hideAllTabApps();
+      document.getElementById("tab-homescreen").style.display = "none";
+      let e = document.getElementById('tabapp-'+app);
+      if(e) {
+        e.style.display = "flex";
+        if(app==="camera") startCamera();
+        if(app==="notes") refreshNotesList();
+        if(app==="chrome") {
+          const frame = document.getElementById('tab-chrome-frame');
+          const urlInput = document.getElementById('chrome-url');
+          try { if (frame && urlInput) urlInput.value = frame.src || ''; } catch(e){ /* ignore cross-origin */ }
+        }
+      }
+    }
+    function closeTabApp(app) { 
+      // if closing urlapp with a blob, revoke previous object URL if tracked in filePreviewRevokes
+      if (app === 'urlapp') revokeLastOpenedFileObjectURL();
+      hideAllTabApps(); document.getElementById("tab-homescreen").style.display=""; stopCamera(); 
+    }
+    function hideAllTabApps() { 
+      Array.from(document.getElementsByClassName("tablet-screen-app")).forEach(e=>{e.style.display="none"});
+      stopCamera(); 
+    }
+
+    /* ------------------ Market - URL launcher ------------------ */
+    function launchUrlApp(name,url) {
+      hideAllTabApps();
+      document.getElementById("tab-homescreen").style.display = "none";
+      let t = document.getElementById("tabapp-urlapp");
+      t.style.display = "flex";
+      document.getElementById("urlapp-title").childNodes[0].nodeValue = name+" ";
+      // ensure protocol
+      if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+      document.getElementById("urlapp-frame").src = url;
+    }
+
+    /* ------------------ Chrome URL navigation + keyboard handling ------------------ */
+    function chromeNavigate() {
+      const input = document.getElementById('chrome-url');
+      const frame = document.getElementById('tab-chrome-frame');
+      if(!input || !frame) return;
+      let url = input.value.trim();
+      if(!url) return;
+      if(!/^https?:\/\//i.test(url)) url = "https://" + url;
+      frame.src = url;
+      input.blur();
+    }
+
+    // Setup chrome input keyboard + focus class
+    (function setupChromeInput(){
+      const chromeInput = document.getElementById('chrome-url');
+      if (!chromeInput) return;
+      chromeInput.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          chromeNavigate();
+        }
+      });
+      chromeInput.addEventListener('focus', function(){ const b = document.getElementById('chromeTitleBar'); if(b) b.classList.add('input-focused'); });
+      chromeInput.addEventListener('blur', function(){ const b = document.getElementById('chromeTitleBar'); if(b) b.classList.remove('input-focused'); });
+    })();
+
+    /* ------------------ Camera (capture + auto-download) ------------------ */
+    let videoStream = null;
+    function startCamera() {
+      let v = document.getElementById('video');
+      let errOut = document.getElementById('cameraError'); if(errOut) errOut.textContent = '';
+      if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({video:true})
+          .then(function(stream) { videoStream = stream; v.srcObject = stream; v.play(); })
+          .catch(function(e){ if(errOut) errOut.textContent = "Could not access webcam: " + e; });
+      } else { if(errOut) errOut.textContent = "Camera not supported in this browser."; }
+    }
+    function stopCamera() { let v = document.getElementById('video'); if(v) v.srcObject = null; if(videoStream) { videoStream.getTracks().forEach(t=>t.stop()); videoStream = null; } }
+
+    function capturePhoto() {
+      const v = document.getElementById('video');
+      const errOut = document.getElementById('cameraError');
+
+      if(!v) { if(errOut) errOut.textContent = "No video element."; return; }
+
+      if (!v.videoWidth || !v.videoHeight) {
+        if(errOut) errOut.textContent = "Camera initializing, please try again in a moment.";
+        setTimeout(capturePhoto, 350);
+        return;
+      }
+
+      const can = document.createElement('canvas');
+      can.width = v.videoWidth;
+      can.height = v.videoHeight;
+      const ctx = can.getContext('2d');
+      ctx.drawImage(v, 0, 0, can.width, can.height);
+
+      const now = new Date();
+      const pad = n => n.toString().padStart(2,'0');
+      const fname = `photo-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+
+      if (can.toBlob) {
+        can.toBlob(function(blob){
+          if(!blob) { if(errOut) errOut.textContent = "Failed to create image blob."; return; }
+
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(blob);
+          img.alt = fname;
+          const area = document.getElementById('snapshotArea');
+          if(area) { area.innerHTML = ''; area.appendChild(img); }
+
+          const a = document.createElement('a');
+          const objectUrl = URL.createObjectURL(blob);
+          a.href = objectUrl;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(()=>{ URL.revokeObjectURL(objectUrl); a.remove(); }, 1000);
+        }, 'image/png', 0.92);
+      } else {
+        try {
+          const dataUrl = can.toDataURL('image/png');
+          const img = document.createElement('img');
+          img.src = dataUrl;
+          img.alt = fname;
+          const area = document.getElementById('snapshotArea');
+          if(area) { area.innerHTML = ''; area.appendChild(img); }
+
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(()=>{ a.remove(); }, 500);
+        } catch(e) {
+          if(errOut) errOut.textContent = "Could not capture photo: " + e;
+        }
+      }
+    }
+
+    /* ------------------ Notes ------------------ */
+    function addNote() {
+      let noteInput = document.getElementById('note-input');
+      let note = noteInput.value.trim();
+      if(note.length > 0) {
+        let notes = JSON.parse(localStorage.getItem('androidTabNotes') || '[]');
+        notes.unshift(note); localStorage.setItem('androidTabNotes', JSON.stringify(notes));
+        noteInput.value = ''; refreshNotesList();
+      }
+    }
+    function deleteNote(idx) {
+      let notes = JSON.parse(localStorage.getItem('androidTabNotes') || '[]');
+      notes.splice(idx, 1); localStorage.setItem('androidTabNotes', JSON.stringify(notes)); refreshNotesList();
+    }
+    function refreshNotesList() {
+      let notes = JSON.parse(localStorage.getItem('androidTabNotes') || '[]');
+      let listHtml = '';
+      notes.forEach((n, i) => {
+        listHtml += '<div class="note-item" style="display:flex;justify-content:space-between;padding:6px 8px;background:rgba(255,255,255,0.02);margin-bottom:6px;border-radius:6px;">'
+          +'<span>' + n.replace(/[<>]/g, "") + '</span>'
+          +'<button class="delete-btn" onclick="deleteNote(' + i + ')">Delete</button></div>';
+      });
+      document.getElementById('notes-list').innerHTML = listHtml || '<span style="color:#adad27;">No notes yet.</span>';
+    }
+
+    /* ------------------ Context menu ------------------ */
+    const contextMenu = document.getElementById("contextMenu");
+    document.getElementById("androidTablet").addEventListener('contextmenu', function(ev) {
+      ev.preventDefault();
+      const menuOptions = [
+        {label:"All Apps", fn:showDrawer},
+        {label:"Upload File", fn:()=>{ triggerFileUpload(); }},
+        {label:"Change Wallpaper", fn:pickWallpaper},
+        {label:"Lock Device", fn:showLockscreen},
+        {label:"About", fn:()=>alert("Android Tablet Simulator with Market\nDemo only!")}
+      ];
+      contextMenu.innerHTML = menuOptions.map((o,i)=>
+        (`<button class="context-menu-item" type="button" style="display:block;padding:8px 18px;background:transparent;border:none;color:#fff;text-align:left;font-size:15px;">${o.label}</button>`)
+      ).join("");
+      [...contextMenu.children].forEach((btn,i)=>btn.onclick=(e)=>{ contextMenu.style.display="none"; menuOptions[i].fn(); });
+      contextMenu.style.display = "block";
+      contextMenu.style.left = Math.min(ev.clientX,window.innerWidth-175) + "px";
+      contextMenu.style.top = Math.min(ev.clientY,window.innerHeight-110) + "px";
+    });
+    document.addEventListener('click', ()=>{ if(contextMenu) contextMenu.style.display="none"; });
+
+    /* ------------------ Wallpaper picker ------------------ */
+    function pickWallpaper() {
+      const walls = [
+        {name:"Polished Blue-Red", url:""},
+        {name:"Synth Gradient", url:"https://wallpapers.com/images/hd/synthwave-gradient-0ndcg6idw99w5he2.jpg"},
+        {name:"Vapor Grid", url:"https://wallpapercave.com/wp/wp2599594.jpg"}
+      ];
+      let html = "Choose your wallpaper:<br>";
+      html += walls.map((w,i)=>{
+        if (!w.url) {
+          return `<div style="display:inline-block;margin:8px;padding:10px;border-radius:8px;background:linear-gradient(135deg,#0a67ad,#ff4460);color:#fff;cursor:pointer;" onclick="applyPolishedWall();document.getElementById('wallModal').remove();">${w.name}</div>`;
+        }
+        return `<img src="${w.url}" style="width:110px;height:60px;border-radius:9px;cursor:pointer;margin:7px 13px 7px 0;border:4px solid rgba(255,255,255,0.06)" onclick="setWallpaper('${w.url}');document.getElementById('wallModal').remove();">`;
+      }).join('');
+      html += `<br><input type="file" accept="image/*" onchange="window.readWall(event)" style="margin-top:8px;">`;
+      let modal = document.createElement('div');
+      modal.id = "wallModal";
+      modal.style = "position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.54);z-index:9999;display:flex;align-items:center;justify-content:center;";
+      modal.innerHTML = `<div style="background:#0e1520;border-radius:12px;box-shadow:0 6px 54px rgba(0,0,0,0.8);padding:20px;color:#fff;text-align:center;font-size:1rem;">${html}<br><br>
+        <button onclick="document.getElementById('wallModal').remove();" style="margin-top:12px;padding:8px 14px;border-radius:8px;">Close</button></div>`;
+      document.body.appendChild(modal);
+      window.readWall = function(e) {
+        let file = e.target.files[0];
+        if(file) {
+          let reader = new FileReader();
+          reader.onload = function(evt) {
+            setWallpaper(evt.target.result);
+            document.getElementById('wallModal').remove();
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+    }
+    function applyPolishedWall() {
+      document.body.style.backgroundImage =
+        'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 8%),' +
+        'radial-gradient(circle at 80% 80%, rgba(255,255,255,0.03), transparent 12%),' +
+        'linear-gradient(135deg, rgba(6,97,170,0.96) 0%, rgba(13,84,197,0.92) 30%, rgba(255,67,92,0.90) 70%, rgba(166,0,26,0.95) 100%)';
+      localStorage.setItem("androidTabletWallpaper", "_polished_builtin_");
+    }
+    function setWallpaper(url) { document.body.style.backgroundImage = `url("${url}")`; localStorage.setItem("androidTabletWallpaper", url); }
+    (function(){ let url = localStorage.getItem("androidTabletWallpaper"); if(url) {
+      if (url === "_polished_builtin_") applyPolishedWall(); else document.body.style.backgroundImage=`url("${url}")`;
+    }})();
+
+    // helpers
+    function escapeHtml(str) {
+      return (str + "").replace(/[&<>"'`=\/]/g, function(s) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'})[s]; });
+    }
+    function escapeJs(str) {
+      return (str + "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+    /* ------------------ CUSTOM CURSOR: ensure and restore ------------------ */
+    (function ensureCustomCursor(){
+      // Find existing element or create it
+      let cursor = document.getElementById('custom-cursor-anim');
+      const cursorSvg = `
+        <svg viewBox="0 0 56 56" aria-hidden="true">
+          <defs>
+            <radialGradient id="ccG" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#66e0ff"/>
+              <stop offset="55%" stop-color="#05A9FC" stop-opacity="0.9"/>
+              <stop offset="80%" stop-color="#CE22E9" stop-opacity="0.85"/>
+              <stop offset="100%" stop-color="transparent"/>
+            </radialGradient>
+          </defs>
+          <g class="pulse">
+            <circle cx="28" cy="28" r="18" fill="url(#ccG)"></circle>
+            <circle cx="28" cy="28" r="8" fill="#fff" fill-opacity="0.14"></circle>
+          </g>
+        </svg>`;
+      if(!cursor) {
+        cursor = document.createElement('div');
+        cursor.id = 'custom-cursor-anim';
+        cursor.setAttribute('aria-hidden','true');
+        cursor.style.display = 'block';
+        cursor.style.position = 'fixed';
+        cursor.style.left = '0px';
+        cursor.style.top = '0px';
+        cursor.style.width = '56px';
+        cursor.style.height = '56px';
+        cursor.style.pointerEvents = 'none';
+        cursor.style.zIndex = '999999';
+        cursor.style.transform = 'translate(-50%,-50%)';
+        cursor.style.mixBlendMode = 'screen';
+        cursor.style.transition = 'opacity .12s ease';
+        cursor.innerHTML = cursorSvg;
+        document.body.appendChild(cursor);
+      } else {
+        // ensure visible and has SVG content
+        cursor.style.display = 'block';
+        if(!cursor.innerHTML || cursor.innerHTML.trim().length < 10) cursor.innerHTML = cursorSvg;
+        cursor.style.pointerEvents = 'none';
+        cursor.style.zIndex = '999999';
+      }
+
+      // move on mouse move
+      const moveFn = (e) => {
+        // keep within viewport
+        const x = Math.max(8, Math.min(window.innerWidth - 8, e.clientX));
+        const y = Math.max(8, Math.min(window.innerHeight - 8, e.clientY));
+        cursor.style.left = x + 'px';
+        cursor.style.top = y + 'px';
+      };
+      document.body.addEventListener('mousemove', moveFn, {passive:true});
+
+      // show cursor when mouse in tablet, hide when outside
+      const tablet = document.getElementById('androidTablet');
+      if(tablet) {
+        tablet.addEventListener('mouseenter', ()=>{ cursor.style.opacity = '1'; tablet.style.cursor = 'none'; });
+        tablet.addEventListener('mouseleave', ()=>{ cursor.style.opacity = '0.0'; tablet.style.cursor = 'default'; });
+        // start visible only when inside tablet
+        cursor.style.opacity = '0.0';
+      } else {
+        cursor.style.opacity = '1';
+      }
+
+      // If an external script removes the element, recreate it on mutation
+      const observer = new MutationObserver((mutations) => {
+        if (!document.getElementById('custom-cursor-anim')) {
+          observer.disconnect();
+          // re-run setup
+          setTimeout(ensureCustomCursor, 50);
+        }
+      });
+      observer.observe(document.body, {childList:true, subtree:false});
+    })();
+
+    /* ------------------ Upload & file opening logic ------------------ */
+    const fileUploader = document.getElementById('fileUploader');
+    // Keep track of the last object URL we created for the "open in simulator" to revoke it when closed
+    let filePreviewRevokes = [];
+
+    function triggerFileUpload() {
+      if (fileUploader) fileUploader.click();
+    }
+
+    // handle files selected via right-click / assistive
+    fileUploader && fileUploader.addEventListener('change', function(e) {
+      const files = Array.from(e.target.files || []);
+      if (files.length) {
+        showUploadModal(files);
+      }
+      // reset input so same files can be reselected later
+      e.target.value = '';
+    });
+
+    function showUploadModal(files) {
+      const container = document.getElementById('uploadModalContainer');
+      container.innerHTML = '';
+      container.style.display = 'block';
+      const modal = document.createElement('div');
+      modal.className = 'upload-modal';
+      modal.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:800;font-size:1.08rem">Uploaded Files</div><button id="closeUploadModal" style="background:#2c2c36;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;">Close</button></div>`;
+      const list = document.createElement('div');
+      list.style.marginTop = '10px';
+
+      files.forEach((f, idx) => {
+        const item = document.createElement('div');
+        item.className = 'upload-item';
+        const meta = document.createElement('div');
+        meta.style.flex = '1';
+
+        const nameEl = document.createElement('div');
+        nameEl.style.fontWeight = '700';
+        nameEl.textContent = f.name;
+        const infoEl = document.createElement('div');
+        infoEl.style.fontSize = '0.9rem';
+        infoEl.style.color = '#bfc6d1';
+        infoEl.textContent = `${f.type || 'unknown type'} • ${Math.round(f.size/1024)} KB`;
+
+        meta.appendChild(nameEl);
+        meta.appendChild(infoEl);
+
+        // preview if image/video
+        let previewEl = null;
+        const lowerType = (f.type || '').toLowerCase();
+        if (lowerType.startsWith('image/')) {
+          previewEl = document.createElement('img');
+          previewEl.src = URL.createObjectURL(f);
+          previewEl.onload = () => { URL.revokeObjectURL(previewEl.src); };
+          previewEl.style.maxWidth = '160px';
+          previewEl.style.maxHeight = '110px';
+        } else if (lowerType.startsWith('video/')) {
+          previewEl = document.createElement('video');
+          previewEl.controls = true;
+          previewEl.src = URL.createObjectURL(f);
+          previewEl.style.maxWidth = '160px';
+          previewEl.style.maxHeight = '110px';
+        } else if (lowerType === 'application/pdf') {
+          previewEl = document.createElement('div');
+          previewEl.textContent = '[PDF]';
+          previewEl.style = 'width:120px;height:80px;background:#0b1220;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:8px';
+        } else if (lowerType.startsWith('text/') || f.name.match(/\.(txt|md|csv|log|json|js|css|html?)$/i)) {
+          // read first chunk of text
+          previewEl = document.createElement('div');
+          previewEl.style = 'max-width:320px;max-height:110px;overflow:auto;padding:8px;background:#07121a;border-radius:8px;color:#d6dfe6;font-size:0.9rem';
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            let txt = String(evt.target.result);
+            previewEl.textContent = txt.slice(0, 200) + (txt.length > 200 ? '\n\n... (truncated)' : '');
+          };
+          reader.readAsText(f);
+        } else {
+          const icon = document.createElement('div');
+          icon.textContent = 'FILE';
+          icon.style = 'width:120px;height:80px;background:#0b1220;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:8px';
+          previewEl = icon;
+        }
+
+        // Controls: Open in simulator / Download
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.flexDirection = 'column';
+        controls.style.gap = '6px';
+        controls.style.marginLeft = '10px';
+
+        const openBtn = document.createElement('button');
+        openBtn.textContent = 'Open';
+        openBtn.style = 'padding:6px 8px;border-radius:8px;background:#2c8ed8;color:#fff;border:none;cursor:pointer';
+        openBtn.onclick = () => openUploadedFileInSimulator(f);
+
+        const dl = document.createElement('a');
+        dl.href = URL.createObjectURL(f);
+        dl.download = f.name;
+        dl.textContent = 'Download';
+        dl.style = 'padding:6px 8px;border-radius:8px;background:transparent;border:none;color:#9fdfff;text-decoration:none;display:inline-block;text-align:center';
+        // Clean up object URL after a while when used as download
+        setTimeout(()=>{ URL.revokeObjectURL(dl.href); }, 30000);
+
+        controls.appendChild(openBtn);
+        controls.appendChild(dl);
+
+        if (previewEl) item.appendChild(previewEl);
+        item.appendChild(meta);
+        item.appendChild(controls);
+        list.appendChild(item);
+      });
+
+      modal.appendChild(list);
+      container.appendChild(modal);
+      document.getElementById('closeUploadModal').onclick = ()=>{ container.style.display='none'; container.innerHTML=''; };
+    }
+
+    // Revoke tracked object URLs when closing the urlapp or replacing content
+    function revokeLastOpenedFileObjectURL(){
+      while (filePreviewRevokes.length) {
+        const u = filePreviewRevokes.pop();
+        try { URL.revokeObjectURL(u); } catch(e){}
+      }
+    }
+
+    // Open uploaded file inside simulator (attempts best viewer)
+    function openUploadedFileInSimulator(file){
+      if(!file) return;
+      // create blob URL
+      const blobUrl = URL.createObjectURL(file);
+      // track for later revoke when closed
+      filePreviewRevokes.push(blobUrl);
+
+      const type = (file.type || '').toLowerCase();
+      // For text, show inside a simple text viewer overlay (safer than loading into iframe)
+      if (type.startsWith('text/') || file.name.match(/\.(txt|md|csv|log|json|js|css)$/i)) {
+        showTextViewer(file);
+        return;
+      }
+
+      // For most types (images, video, pdf, html), load into urlapp iframe
+      // HTML files will run any scripts they contain - ensure you trust the source
+      const urlAppTitle = document.getElementById('urlapp-title');
+      if (urlAppTitle) urlAppTitle.childNodes[0].nodeValue = file.name + ' ';
+      const iframe = document.getElementById('urlapp-frame');
+      if (iframe) {
+        // For PDFs and images, blobUrl will render in iframe in most browsers
+        iframe.src = blobUrl;
+        // Open urlapp
+        hideAllTabApps();
+        document.getElementById('tab-homescreen').style.display = "none";
+        document.getElementById('tabapp-urlapp').style.display = "flex";
+      }
+    }
+
+    // Text viewer overlay for safe preview
+    function showTextViewer(file){
+      const reader = new FileReader();
+      reader.onload = function(evt){
+        const content = evt.target.result;
+        const container = document.getElementById('uploadModalContainer');
+        container.innerHTML = '';
+        container.style.display = 'block';
+        const modal = document.createElement('div');
+        modal.className = 'upload-modal';
+        modal.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">${escapeHtml(file.name)}</div><button id="closeTextViewer">Close</button></div>`;
+        const pre = document.createElement('pre');
+        pre.style = 'white-space:pre-wrap;max-height:60vh;overflow:auto;background:#07121a;padding:12px;border-radius:8px;margin-top:10px;color:#d6e6f2';
+        pre.textContent = content;
+        modal.appendChild(pre);
+        container.appendChild(modal);
+        document.getElementById('closeTextViewer').onclick = ()=>{ container.style.display='none'; container.innerHTML=''; };
+      };
+      reader.readAsText(file);
+    }
+
+    /* ------------------ Drawer nav button wiring ------------------ */
+    (function bindDrawerNavButtons(){
+      const multitaskBtn = document.getElementById('nav-multitask-drawer');
+      const homeBtn = document.getElementById('nav-home-drawer');
+      const backBtn = document.getElementById('nav-back-drawer');
+
+      if(multitaskBtn) {
+        multitaskBtn.addEventListener('click', function(){
+          // Close drawer then go home (simple multitask behavior for now)
+          hideDrawer();
+          tabGoHome();
+        });
+      }
+      if(homeBtn) {
+        homeBtn.addEventListener('click', function(){
+          // go home from drawer
+          tabGoHome();
+          hideDrawer();
+        });
+      }
+      if(backBtn) {
+        backBtn.addEventListener('click', function(){
+          // simply close drawer (acts as back)
+          hideDrawer();
+        });
+      }
+    })();
+
+    /* ------------------ Assistive touch + upload hookup ------------------ */
+    // Provide a simple assistive upload hook (we used the upload input)
+    // If you have an assistive touch element, bind it to triggerFileUpload()
+
+    /* ------------------ Initialize UI on load ------------------ */
+    document.addEventListener('DOMContentLoaded', function(){
+      // showLockscreen initially
+      showLockscreen();
+
+      // Make right-click upload available and assistive upload button if present
+      const assistiveUploadBtn = document.getElementById('assistiveUploadBtn');
+      if (assistiveUploadBtn) assistiveUploadBtn.addEventListener('click', ()=>{ triggerFileUpload(); });
+
+      // Wire file open on closing urlapp to revoke blob URLs
+      const urlCloseBtns = document.querySelectorAll('#tabapp-urlapp .close-btn');
+      urlCloseBtns.forEach(b => b.addEventListener('click', () => revokeLastOpenedFileObjectURL()));
+
+      // Improve keyboard accessibility for drawer nav
+      ['nav-multitask-drawer','nav-home-drawer','nav-back-drawer'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('keydown', (e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+      });
+    });
+
+    /* ------------------ Misc: expose open for inline onclicks ------------------ */
+    window.openUploadedFileInSimulator = openUploadedFileInSimulator;
+    window.triggerFileUpload = triggerFileUpload;
+    window.showUploadModal = showUploadModal;
+    window.showDrawer = showDrawer;
+    window.hideDrawer = hideDrawer;
+    window.launchUrlApp = launchUrlApp;
+    window.launchTabApp = launchTabApp;
+    window.tabGoHome = tabGoHome;
+    window.closeTabApp = closeTabApp;
+  </script>
+</body>
+</html>
